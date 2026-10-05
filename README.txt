@@ -1,39 +1,64 @@
-# Rough Draft Instructions for using denovogear  VNTR version
-Authors: Don Conrad, Avinash Ramu ( aramu at genetics dot wustl dot edu ) and Reed Cartwright.
-Please check http://denovogear.weebly.com for updated documentation.
+# DeNovoGear-VNTR: de novo mutation calling at tandem repeats
 
-## RELEASE NOTES
-v0.0.1 
-Call Denovo VNTRs with a mod of DNG
+A modified version of [DeNovoGear](https://github.com/ultimatesource/denovogear)
+that detects **de novo mutations at variable number tandem repeats (VNTRs) and
+short tandem repeats (STRs)** in parent-offspring trios.
 
+*Don Conrad, Avinash Ramu and Reed Cartwright (v0.0.1, 2013).*
 
-## COMPILING 
-Compilation of DeNovoGear requires CMake.  You can download CMake installers from the CMake
-website <http://www.cmake.org/cmake/resources/software.html>.  Most Linux
-distributions allow you to install CMake using their package software.
+## Background
 
-Compiling and Installing on Linux:
-        `tar xvzf denovogear*.tar.gz`
-        `cd denovogear*/build`
-        `cmake ..`
-        `make`
-        `sudo make install`
+De novo mutations, new mutations present in a child but not in either parent,
+are a major cause of rare developmental disorders and a direct way to measure
+the human germline mutation rate. DeNovoGear finds de novo point mutations and
+indels with a likelihood model that accounts for sequencing error and the
+genotypes of both parents
+([Ramu *et al.*, *Nature Methods* 2013](https://doi.org/10.1038/nmeth.2611)).
 
-Creating Packages:
-        `make package`
-        `make package_source`
+Tandem repeats mutate orders of magnitude faster than single nucleotides, and
+a repeat locus can carry many alleles (repeat lengths) at once rather than
+two. This version extends the DeNovoGear indel model to score **multi-allelic
+repeat genotypes**, using genotype likelihoods produced by the
+[lobSTR](https://github.com/mgymrek/lobstr-code) STR caller. It handles loci
+with fewer than 20 alternate alleles.
 
-## BINARIES
-Binaries are available for MacOSX and for Linux.
+## What changed from DeNovoGear 0.5.1
 
-## RUNNING THE CODE
+- `src/indelLike.cc`: new `trio_like_VNTR` likelihood that enumerates all
+  parent and child genotype combinations across many alleles.
+- `src/makeLookup.cc`: `makeVNTRDenovoMask`, which marks which trio genotype
+  configurations imply a de novo event.
+
+See [change.log](change.log) for the full version history.
+
+## Build
+
+Requires CMake and a C++ compiler.
+
+```bash
+git clone https://github.com/gatoravi/denovogear-VNTR-code
+cd denovogear-VNTR-code/build
+cmake ..
+make
+```
+
+## Quick start
+
+```bash
+./denovogear dnm auto --ped examples/sample_CEU.ped --bcf trio.bcf
+```
+
+Example PED files for a trio and for a paired-sample analysis are in
+[`examples/`](examples).
+
+## Detailed usage (inherited from DeNovoGear)
 
 ### Finding Denovo Mutations in trios and pairs.
 
 DeNovoGear takes in a PED file and a BCF file as input. The PED file describes the relationship between the samples and the BCF file contains the sequencing information for every locus.
 
 #### usage:
-	     `./denovogear auto dnm --ped sample.ped --bcf sample.bcf`
+	     `./denovogear dnm auto --ped sample.ped --bcf sample.bcf`
 
 #####  about sample.bcf:
 BCF files can be generated from the alignment using the samtools mpileup 
@@ -71,7 +96,7 @@ If you wish to change the default point or indel mutation rates use the --snp_mr
 or --indel_mrate switches respectively. 
 
 For example
-	     `./denovogear auto dnm --ped sample.ped --bcf sample.bcf --snp_mrate 2e-10 --indel_mrate 1e-11`
+	     `./denovogear dnm auto --ped sample.ped --bcf sample.bcf --snp_mrate 2e-10 --indel_mrate 1e-11`
 
 The indel mutation rate prior is calculated based on the length of the insertion or deletion event, 
 separate models are used for insertions and deletions. The two models are based on the indel observations from the 1000Genomes phase 1 data.
@@ -86,7 +111,7 @@ Note that a constant factor is used to scale the mutation rate, it is set to 1.0
 by default and can be set using the switch --mu_scale. This provides the users to scale the mutation rate prior according to their data-set.
 
 For example, 
-	     `./denovogear auto dnm --ped sample.ped --bcf sample.bcf --mu_scale 3`
+	     `./denovogear dnm auto --ped sample.ped --bcf sample.bcf --mu_scale 3`
 
 
 #### OUTPUT FORMAT for TRIOS
